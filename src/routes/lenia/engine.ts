@@ -24,7 +24,7 @@ export const smooth = (x:tf.Tensor4D) => {
     return tf.depthwiseConv2d(x, nkernel, [1,1], "same")
 }
 
-export const convert = (x:tf.Tensor4D) => x.mean([-1,0]).mul(255).clipByValue(0,255).cast("int32")
+export const convert = (x:tf.Tensor4D) => x.mean([-1,0]).clipByValue(0,1)
 
 const growth = (x:tf.Tensor) => {
     const top = x.sub(mu).square()
@@ -70,14 +70,18 @@ const normalise = (x:tf.Tensor, axis?:number[]) => {
 }
 
 export const lenia = (world:tf.Tensor4D) => {
+    const nextWorld = tf.tidy(() => {
+        const kernel = constructKernel(alphas, betas, weights)
+        const acts = tf.depthwiseConv2d(world, kernel, [1,1], "same")
+        const update = growth(acts.matMul(linear)).mul(dt)
 
-    const kernel = constructKernel(alphas, betas, weights)
-    const acts = tf.depthwiseConv2d(world, kernel, [1,1], "same")
-    const update = growth(acts.matMul(linear)).mul(dt)
+        const noise = tf.randomUniform(world.shape)
+        const nextWorld = world.add(update).add(noise)
+        return normalise(nextWorld, [1,2])
+    })
 
-    const noise = tf.randomUniform(world.shape)
-    const nextWorld = world.add(update).add(noise)
-    return normalise(nextWorld, [1,2])
+    return nextWorld
+    
 }
 
 // const [height, width] = [256, 256]
