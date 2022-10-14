@@ -5,7 +5,7 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
-		"test": "playwright test",
+		"test": "vitest run",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --plugin-search-dir . --check . && eslint .",
@@ -30,10 +30,12 @@
 		"svelte-preprocess": "^4.10.6",
 		"tslib": "^2.3.1",
 		"typescript": "^4.7.4",
-		"vite": "^3.1.0"
+		"vite": "^3.1.0",
+		"vitest": "^0.24.1"
 	},
 	"type": "module",
 	"dependencies": {
-		"@tensorflow/tfjs": "^3.21.0"
+		"@tensorflow/tfjs": "^3.21.0",
+		"pixi.js": "^6.5.6"
 	}
 }
