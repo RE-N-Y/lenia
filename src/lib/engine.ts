@@ -2,7 +2,7 @@ import * as tf from '@tensorflow/tfjs';
 
 const [h, w] = [32,32]
 const bumps = 3;
-const channels = 4;
+const channels = 8;
 
 const mu = tf.variable(tf.randomUniform([channels]))
 const sigma = tf.variable(tf.randomUniform([channels]).mul(.1))
@@ -21,7 +21,7 @@ const filter = tf.tensor([1,4,4,1])
 export const smooth = (x:tf.Tensor4D) => {
     const result = tf.tidy(() => {
         const kernel:tf.Tensor2D = filter.reshape([1,4]).mul(filter.reshape([4,1]))
-        const nkernel:tf.Tensor4D = kernel.div(kernel.sum()).reshape([4,4,1,1]).tile([1,1,4,1])
+        const nkernel:tf.Tensor4D = kernel.div(kernel.sum()).reshape([4,4,1,1]).tile([1,1,channels,1])
         const smooooth = tf.depthwiseConv2d(x, nkernel, [1,1], "same")
 
         return smooooth
@@ -37,7 +37,7 @@ const growth = (x:tf.Tensor) => {
     const result = tf.tidy(() => {
         const top = x.sub(mu).square()
         const bottom = sigma.square().mul(2)
-        const g = tf.exp(top.div(bottom).mul(-1))
+        const g = tf.exp(top.mul(-1).div(bottom))
         const gg = g.mul(2).sub(1)
 
         return gg
@@ -55,11 +55,6 @@ const radius = () => {
         const [yy, xx] = tf.meshgrid(yi, xi)
         const r = tf.sqrt(yy.square().add(xx.square()))
 
-        yi.dispose()
-        xi.dispose()
-        yy.dispose()
-        xx.dispose()
-
         return r
     })
 
@@ -68,7 +63,6 @@ const radius = () => {
 
 
 const constructKernel = (alphas:tf.Tensor, betas:tf.Tensor, weights:tf.Tensor) => {
-
 
     const result = tf.tidy(() => {
         const [_alphas, _betas, _weights] = [alphas, betas, weights].map(t => t.reshape([1,1,bumps,channels]))
@@ -79,7 +73,7 @@ const constructKernel = (alphas:tf.Tensor, betas:tf.Tensor, weights:tf.Tensor) =
         const dshell = _alphas.mul(radii).mul(radii.sub(1)).mul(-1)
         const shell = _alphas.div(dshell.add(eps))
         const kernel = tf.exp(_alphas.sub(shell)).mul(_weights).sum([-2])
-        const dkernel = kernel.mean([0,1], true)
+        const dkernel = kernel.sum([0,1], true)
         const K:tf.Tensor4D = kernel.div(dkernel).reshape([h, w, channels, 1])
 
         return K
@@ -103,12 +97,11 @@ const normalise = (x:tf.Tensor, axis?:number[]) => {
 
 export const lenia = (world:tf.Tensor4D) => {
 
-
     const result = tf.tidy(() => {
         const kernel = constructKernel(alphas, betas, weights)
-        const acts = tf.depthwiseConv2d(world, kernel, [1,1], "same")
+        const acts = tf.depthwiseConv2d(world, kernel, 1, "same")
         const update = growth(acts.matMul(linear)).mul(dt)
-        const noise = tf.randomUniform(world.shape)
+        const noise = tf.randomUniform(world.shape).mul(.001)
         const nextWorld = normalise(world.add(update).add(noise), [1,2])    
 
         return nextWorld
