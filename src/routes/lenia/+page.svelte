@@ -1,33 +1,44 @@
-<script>
+<script lang="ts">
+    import { onMount } from 'svelte';
     import { browser } from '$app/environment';
     import * as tf from "@tensorflow/tfjs";
-    import { convert, lenia, smooth } from "$lib/engine";
+    import { lenia } from "$lib/engine";
+	
 
+    let [height, width] = [384, 384]
+    let canvas:HTMLCanvasElement;
     let last = { time:0, frame:0 }
     let current = { time:0, frame:0 }
-    let fps = 0
+    let fps = 0;
+
+    onMount(() => {
+        let ctx = canvas.getContext("2d")
+        ctx?.fillRect(0, 0, 256, 256)
+    })
 
     if (browser) { 
         let tick = 0;
         const duration = 1000;
-        const canvas = document.getElementById("world")
+        const engine = lenia(16, 16, 3, 4)
         
         let nextWorld;
-        let world = tf.randomUniform([1,512,512,4])
-        world = smooth(smooth(world))
+        let world = tf.randomUniform([1,height,width,4])
+        world = engine.smooth(engine.smooth(world))
 
         const simulate = async () => {
             if (tick < duration) {
-                current = { time:requestAnimationFrame(simulate), frame:tick } 
-                fps = (current.frame - last.frame) / (current.time - last.time)
+                requestAnimationFrame(simulate)
+                
+                current = { time:performance.now(), frame:tick } 
+                fps = 1000 * (current.frame - last.frame) / (current.time - last.time)
                 last = { ...current }
             }
 
-            nextWorld = lenia(world)
+            nextWorld = engine.run(world)
             world.dispose()
             world = nextWorld
             
-            const pixels = convert(world)
+            const pixels = engine.convert(world)
             await tf.browser.toPixels(pixels, canvas)
             pixels.dispose()
             tick++
@@ -36,15 +47,10 @@
         requestAnimationFrame(simulate)
         
     }
-    
-    
-
-
 </script>
 
 
 <div>
-    <canvas id="world"/>
-    <p>fps:{fps}</p>
-    <p>frame:{current.frame} time:{current.time}</p>
+    <canvas bind:this={canvas} height={height} width={width}/>
+    <p>fps:{Math.round(fps)}</p>
 </div>
