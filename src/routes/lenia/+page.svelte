@@ -13,11 +13,10 @@
         const canvas = document.getElementById("world")
         
         let nextWorld;
-        let world = tf.randomUniform([1,256,256,8])
+        let world = tf.randomUniform([1,512,512,4])
         world = smooth(smooth(world))
 
         const simulate = async () => {
-
             if (tick < duration) {
                 current = { time:requestAnimationFrame(simulate), frame:tick } 
                 fps = (current.frame - last.frame) / (current.time - last.time)

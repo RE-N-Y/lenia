@@ -2,7 +2,7 @@ import * as tf from '@tensorflow/tfjs';
 
 const [h, w] = [32,32]
 const bumps = 3;
-const channels = 8;
+const channels = 4;
 
 const mu = tf.variable(tf.randomUniform([channels]))
 const sigma = tf.variable(tf.randomUniform([channels]).mul(.1))
@@ -13,10 +13,10 @@ const weights = tf.variable(tf.randomUniform([channels, bumps]))
 
 const linear = tf.variable(tf.randomUniform([channels, channels], -1/Math.sqrt(channels), 1/Math.sqrt(channels)))
 
-const dt = tf.scalar(.3);
+const dt = tf.scalar(.5);
 const eps = tf.scalar(4e-8)
 
-const filter = tf.tensor([1,4,4,1])
+const filter = tf.tensor([1,3,3,1])
 
 export const smooth = (x:tf.Tensor4D) => {
     const result = tf.tidy(() => {
@@ -30,7 +30,7 @@ export const smooth = (x:tf.Tensor4D) => {
     return result
 }
 
-export const convert = (x:tf.Tensor4D) => x.mean([-1,0]).clipByValue(0,1)
+export const convert = (x:tf.Tensor4D) => tf.tidy(() => x.mean([-1,0]).clipByValue(0,1))
 
 const growth = (x:tf.Tensor) => {
 
