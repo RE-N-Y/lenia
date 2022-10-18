@@ -79,12 +79,28 @@
 </script>
 
 
-<div>
-    <div on:mousedown={handleMouseDown} style={`background:black; height:${height}px; width:${width}px;`}>
-        <canvas bind:this={canvas} height={`${height}`} width={`${width}`} />
+<div class="container mx-auto">
+    <div class="p-2">
+        <h1>Neural Celluar Automata</h1>
+        <p>Generating artificial life with Lenia</p>
     </div>
-    <button on:click={handlePlay}>{play ? "stop" : "play"}</button>
-    <button on:click={handleReset}>reset</button>
-    <button on:click={handleClear}>clear</button>
-    <p>fps:{Math.round(fps)}</p>
+    
+    <div class="flex p-2">
+        <div class="flex-auto">
+            <div class={`h-[${height}px] w-[${width}px shadow-md]`} on:mousedown={handleMouseDown}>
+                <canvas class="rounded bg-clip-border bg-black" bind:this={canvas} height={`${height}`} width={`${width}`} />
+            </div>
+            <div class="space-x-1">
+                <button on:click={handlePlay}>{play ? "stop" : "play"}</button>
+                <button on:click={handleReset}>reset</button>
+                <button on:click={handleClear}>clear</button>
+            </div>
+            
+            <p>fps:{Math.round(fps)}</p>
+        </div>
+        <div class="flex-auto">
+
+        </div>
+        
+    </div>
 </div>
