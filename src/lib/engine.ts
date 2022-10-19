@@ -72,7 +72,7 @@ const growth = (x:tf.Tensor, mu:tf.Tensor, sigma:tf.Tensor) => {
 
 }
 
-export const lenia = (kh:number, kw:number, bumps:number, channels:number, speed:number=.1) => {
+export const lenia = (kh:number, kw:number, bumps:number, channels:number) => {
     
     // growth parameters
     const mu = tf.variable(tf.randomUniform([channels]))
@@ -83,9 +83,6 @@ export const lenia = (kh:number, kw:number, bumps:number, channels:number, speed
     const betas = tf.variable(tf.randomUniform([channels, bumps]))
     const weights = tf.variable(tf.randomUniform([channels, bumps]))
     const linear = tf.variable(tf.randomUniform([channels, channels], -1/Math.sqrt(channels), 1/Math.sqrt(channels)))
-
-    // speed
-    const dt = tf.scalar(speed)
 
     const constructKernel = (alphas:tf.Tensor, betas:tf.Tensor, weights:tf.Tensor) => {
 
@@ -107,11 +104,11 @@ export const lenia = (kh:number, kw:number, bumps:number, channels:number, speed
         return result
     }
 
-    const run = (world:tf.Tensor4D) => {
+    const run = (world:tf.Tensor4D, speed:number=.1) => {
         const result = tf.tidy(() => {
             const kernel = constructKernel(alphas, betas, weights, kh, kw, bumps, channels)
             const acts = tf.depthwiseConv2d(world, kernel, 1, "same").matMul(linear)
-            const update = growth(acts, mu, sigma).mul(dt)
+            const update = growth(acts, mu, sigma).mul(speed)
             const noise = tf.randomUniform(world.shape).mul(.001)
             const nextWorld = normalise(world.add(update).add(noise), [1,2])    
 
