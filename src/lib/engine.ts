@@ -33,12 +33,12 @@ const radius = (kh:number, kw:number) => {
 export const convert = (x:tf.Tensor4D) => tf.tidy(() => x.mean([-1,0]).clipByValue(0,1))
 
 // smooth channels
-const filter = tf.tensor([1,3,3,1])
+const filter = tf.tensor([1,3,1])
 export const smooth = (x:tf.Tensor4D) => {
     const result = tf.tidy(() => {
         const channels = x.shape[3]
-        const kernel:tf.Tensor2D = filter.reshape([1,4]).mul(filter.reshape([4,1]))
-        const nkernel:tf.Tensor4D = kernel.div(kernel.sum()).reshape([4,4,1,1]).tile([1,1,channels,1])
+        const kernel:tf.Tensor2D = filter.reshape([1,3]).mul(filter.reshape([3,1]))
+        const nkernel:tf.Tensor4D = kernel.div(kernel.sum()).reshape([3,3,1,1]).tile([1,1,channels,1])
         const smooooth = tf.depthwiseConv2d(x, nkernel, [1,1], "same")
         return smooooth
     })
@@ -74,15 +74,27 @@ const growth = (x:tf.Tensor, mu:tf.Tensor, sigma:tf.Tensor) => {
 
 export const lenia = (kh:number, kw:number, bumps:number, channels:number) => {
     
-    // growth parameters
-    const mu = tf.variable(tf.randomUniform([channels]))
-    const sigma = tf.variable(tf.randomUniform([channels]).mul(.1))
-    
-    // filter parameters
-    const alphas = tf.variable(tf.randomUniform([channels, bumps]).mul(4.))
-    const betas = tf.variable(tf.randomUniform([channels, bumps]))
-    const weights = tf.variable(tf.randomUniform([channels, bumps]))
-    const linear = tf.variable(tf.randomUniform([channels, channels], -1/Math.sqrt(channels), 1/Math.sqrt(channels)))
+    const config = { kh, kw, bumps, channels }
+
+    const initialise = () => {
+        const result = tf.tidy(() => {
+            // growth parameters
+            const mu = tf.variable(tf.randomUniform([channels]))
+            const sigma = tf.variable(tf.randomUniform([channels]).mul(.1))
+            
+            // filter parameters
+            const alphas = tf.variable(tf.randomUniform([channels, bumps]).mul(4.))
+            const betas = tf.variable(tf.randomUniform([channels, bumps]))
+            const weights = tf.variable(tf.randomUniform([channels, bumps]))
+            const linear = tf.variable(tf.randomUniform([channels, channels], -1/Math.sqrt(channels), 1/Math.sqrt(channels)))
+
+            return { mu, sigma, alphas, betas, weights, linear }
+        })
+
+        return result
+    }
+
+    const { mu, sigma, alphas, betas, weights, linear } = initialise()
 
     const constructKernel = (alphas:tf.Tensor, betas:tf.Tensor, weights:tf.Tensor) => {
 
@@ -118,7 +130,16 @@ export const lenia = (kh:number, kw:number, bumps:number, channels:number) => {
         return result
     }
 
-    return { run }
+    const dispose = () => {
+        mu.dispose()
+        sigma.dispose()
+        alphas.dispose()
+        betas.dispose()
+        weights.dispose()
+        linear.dispose()
+    }
+
+    return { config, run, dispose }
 }
 
     

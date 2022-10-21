@@ -10,15 +10,17 @@
 
     let play = false;
 
-    let smoothness = 1;
     let [sigmaX, sigmaY] = [64, 64]
     let [height, width] = [256, 256]
     let canvas:HTMLCanvasElement;
     let last = { time:0, frame:0 }
     let current = { time:0, frame:0 }
     let fps = 0;
-
-    let world = tf.zeros([1,height,width,4]);
+    let world = tf.zeros([1,height,width,channels]);
+    
+    $: [_, wh, ww, wc] = world.shape
+    $: sync = (wh === height) && (ww === width) && (wc === channels)
+    $: play && console.table(tf.memory())
 
     const redraw = async () => {
         const pixels = convert(world)
@@ -50,122 +52,131 @@
         redraw()
     }
 
-    let tick = 0;
+    let counter = 0;
     const simulate = async () => {
         if (play) {
             requestAnimationFrame(simulate)
-            current = { time:performance.now(), frame:tick } 
+            current = { time:performance.now(), frame:counter } 
             fps = 1000 * (current.frame - last.frame) / (current.time - last.time)
             last = { ...current }
         }
     
         updateWorld(engine.run(world, speed))
         redraw()
-        tick++
+        counter++
     }
 
-    const handlePlay = () => {
-        requestAnimationFrame(simulate)
-        play = !play 
-    }
-
-    const handleWorldReset = () => {
-        updateWorld(tf.randomUniform(world.shape))
-        for (let index = 0; index < smoothness; index++) {
-            updateWorld(smooth(world))
-        }
+    const reset = () => {
+        console.log(`update random ${tf.memory().numTensors}`)
+        updateWorld(tf.randomUniform([1,height,width,channels]))
+        console.log(`update engine ${tf.memory().numTensors}`)
+        resetEngine()
+        console.log(`update world ${tf.memory().numTensors}`)
         updateWorld(engine.run(world, speed))
+        console.log(`redraw ${tf.memory().numTensors}`)
         redraw()
+        console.log(`done ${tf.memory().numTensors}`)
     }
 
-    const handleClear = () => {
+    const handleClear = async () => {
         updateWorld(tf.zeros(world.shape))
         redraw()
     }
 
-    const handleEngineReset = () => {
+    const resetEngine = () => {
+        engine.dispose()
         engine = lenia(kh, kw, bumps, channels)
     }
-        
+    
+    const handleSmooth = () => {
+        updateWorld(smooth(world))
+        redraw()
+    }
+
+    const handlePlay = async () => {
+        play = !play;
+        if (!sync) reset()
+        requestAnimationFrame(simulate)
+    }
         
 </script>
 
-<div class="container mx-auto">
-    <div class="p-2">
+<div class="container mx-auto p-4">
+    <div class="text-center">
         <h1>Neural Celluar Automata</h1>
         <p>Generating artificial life with Lenia</p>
     </div>
-    <div class="flex p-2">
-        <div class="flex flex-col items-center mr-12">
-            <div class={`h-[${height}px] w-[${width}px shadow-md]`} on:mousedown={handleMouseDown}>
-                <span class="text-xs p-1">fps {Math.round(fps)}</span>
-                <canvas class="rounded bg-clip-border bg-black" bind:this={canvas} height={`${height}`} width={`${width}`} />
-            </div>
-            <span class="m-2"/>
-            <button on:click={handlePlay}>{play ? "Stop" : "Play"}</button>
+    <div class="flex flex-col items-center">
+        <div class={`h-[${height}px] w-[${width}px shadow-md]`} on:mousedown={handleMouseDown}>
+            <span class="text-xs p-1">fps {Math.round(fps)}</span>
+            <canvas class="rounded bg-clip-border bg-black" bind:this={canvas} height={`${height}`} width={`${width}`} />
         </div>
-        <div class="flex-auto space-y-6">
+        <button class="m-2" on:click={handlePlay}>{play ? "Stop" : "Play"}</button>
+    </div>
+    <div class="flex justify-center">
+        <div class="space-y-6">
             <div class="space-y-2">
-                <h2 class="mb-1">Model</h2>
+                <h2 class="mb-1">Engine</h2>
                 <div class="flex space-x-4">
                     <div>
                         <label class="block text-sm text-black/70" for="kh">Kernel Height</label>
-                        <input class="shadow appearance-none rounded-md w-32 px-2" id="kh" type="number" bind:value={kh} placeholder="32"/>
+                        <input class="shadow appearance-none rounded-md w-32 px-2" id="kh" type="number" bind:value={kh}/>
                     </div>
                     <div>
                         <label class="block text-sm text-black/70" for="kw">Kernel Width</label>
-                        <input class="shadow appearance-none rounded-md w-32 px-2" id="kw" type="number" bind:value={kw} placeholder="32"/>
+                        <input class="shadow appearance-none rounded-md w-32 px-2" id="kw" type="number" bind:value={kw}/>
                     </div>
                     <div>
                         <label class="block text-sm text-black/70" for="bumps">Bumps</label>
                         <input class="shadow appearance-none rounded-md w-32 px-2" id="bumps" type="range" bind:value={bumps} min="1" max="5"/>
                     </div>
                     <div>
-                        <label class="block text-sm text-black/70" for="channels">Channels</label>
-                        <input class="shadow appearance-none rounded-md w-32 px-2" id="channels" type="range" bind:value={channels} min="1" max="8"/>
+                        <label class="block text-sm text-black/70" for="speed">Speed</label>
+                        <input class="shadow appearance-none rounded-md w-32 px-2" id="speed" type="range" min="0.1" max="1" step="0.1" bind:value={speed}/>
                     </div>
-                </div>
-                
-                <button on:click={handleEngineReset}>Reset engine</button>
+                </div>    
+                <button on:click={resetEngine}>Reset engine</button>
             </div>
 
             <div class="flex space-x-8">
                 <div>
                     <h2 class="mb-1">World</h2>
-                    <div class="flex space-x-4 mb-2">
-                        <div>
-                            <label class="block text-sm text-black/70" for="height">Height</label>
-                            <input class="shadow appearance-none rounded-md w-32 px-2" id="height" type="number" bind:value={height} />
+                    <div class="relative">
+                        <div class={`${!play && "hidden"} flex flex-col justify-center items-center absolute w-full h-full`}>
+                            <span class="material-icons text-black/70">lock</span>
+                            <p>Locked</p>
                         </div>
-                        <div>
-                            <label class="block text-sm text-black/70" for="width">Width</label>
-                            <input class="shadow appearance-none rounded-md w-32 px-2" id="width" type="number" bind:value={width} />
+                        <div class="flex space-x-4 mb-2">
+                            <div class={`${play && "opacity-25"}`}>
+                                <label class="block text-sm text-black/70" for="height">Height</label>
+                                <input class="shadow appearance-none rounded-md w-32 px-2" id="height" type="number" bind:value={height} disabled={play} />
+                            </div>
+                            <div class={`${play && "opacity-25"}`}>
+                                <label class="block text-sm text-black/70" for="width">Width</label>
+                                <input class="shadow appearance-none rounded-md w-32 px-2" id="width" type="number" bind:value={width} disabled={play} />
+                            </div>
+                        </div>
+                        <div class="flex space-x-4 mb-2">
+                            <div class={`${play && "opacity-25"}`}>
+                                <label class="block text-sm text-black/70" for="channels">Channels</label>
+                                <input class="shadow appearance-none rounded-md w-32 px-2" id="channels" type="range" bind:value={channels} min="1" max="8" disabled={play}/>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex space-x-4 mb-2">
-                        <div>
-                            <label class="block text-sm text-black/70" for="smoothness">Smoothing</label>
-                            <input class="shadow appearance-none rounded-md w-32 px-2" id="smoothness" type="range" min="0" max="4" bind:value={smoothness}/>
-                        </div>
-                        <div>
-                            <label class="block text-sm text-black/70" for="speed">Speed</label>
-                            <input class="shadow appearance-none rounded-md w-32 px-2" id="speed" type="range" min="0.1" max="1" step="0.1" bind:value={speed}/>
-
-                        </div>
-                    </div>
-                    <button on:click={handleWorldReset}>New world</button>
+                    <button on:click={reset}>New world</button>
                     <button on:click={handleClear}>Clear world</button>
+                    <button on:click={handleSmooth}>Smooth world</button>
                 </div>
                 
                 <div>
                     <h2 class="mb-1">Editing</h2>
                     <div class="flex space-x-4 mb-2">
                         <div>
-                            <label class="block text-sm text-black/70" for="sigmaX">Sigma - x</label>
+                            <label class="block text-sm text-black/70" for="sigmaX">x</label>
                             <input class="shadow appearance-none rounded-md w-32 px-2" id="sigmaX" type="number" bind:value={sigmaX}/>
                         </div>
                         <div>
-                            <label class="block text-sm text-black/70" for="sigmaY">Sigma - y</label>
+                            <label class="block text-sm text-black/70" for="sigmaY">y</label>
                             <input class="shadow appearance-none rounded-md w-32 px-2" id="sigmaY" type="number" bind:value={sigmaY}/>
                         </div>
                     </div>
