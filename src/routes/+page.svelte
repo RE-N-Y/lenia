@@ -20,7 +20,6 @@
     
     $: [_, wh, ww, wc] = world.shape
     $: sync = (wh === height) && (ww === width) && (wc === channels)
-    $: play && console.table(tf.memory())
 
     const redraw = async () => {
         const pixels = convert(world)
@@ -67,15 +66,10 @@
     }
 
     const reset = () => {
-        console.log(`update random ${tf.memory().numTensors}`)
         updateWorld(tf.randomUniform([1,height,width,channels]))
-        console.log(`update engine ${tf.memory().numTensors}`)
         resetEngine()
-        console.log(`update world ${tf.memory().numTensors}`)
         updateWorld(engine.run(world, speed))
-        console.log(`redraw ${tf.memory().numTensors}`)
         redraw()
-        console.log(`done ${tf.memory().numTensors}`)
     }
 
     const handleClear = async () => {
