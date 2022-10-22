@@ -42,6 +42,6 @@
     "@tensorflow/tfjs": "^3.21.0"
   },
   "engines": {
-    "node": ">=14 <15"
+    "node": ">=16.14"
   }
 }
