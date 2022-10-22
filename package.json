@@ -40,5 +40,8 @@
   "dependencies": {
     "@material-design-icons/svg": "^0.13.0",
     "@tensorflow/tfjs": "^3.21.0"
+  },
+  "engines": {
+    "node": ">=14 <15"
   }
 }
