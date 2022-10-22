@@ -1,6 +1,7 @@
 <script lang="ts">
     import * as tf from "@tensorflow/tfjs";
     import { lenia, smooth, convert, pdf } from "$lib/engine"
+    import lock from "@material-design-icons/svg/filled/lock.svg"
 
     let channels = 4;
     let bumps = 3;
@@ -137,7 +138,7 @@
                     <h2 class="mb-1">World</h2>
                     <div class="relative">
                         <div class={`${!play && "hidden"} flex flex-col justify-center items-center absolute w-full h-full`}>
-                            <span class="material-icons text-black/70">lock</span>
+                            <img src={lock} alt="lock"/>
                             <p>Locked</p>
                         </div>
                         <div class="flex space-x-4 mb-2">
