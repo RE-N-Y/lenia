@@ -1,6 +1,5 @@
 # Neural Celluar Automata with Lenia
 
-
 ## TODOS
 
 1. Add Save & Load states
@@ -9,4 +8,5 @@
 4. Reduce bundle size
     1. [TFJS](https://www.tensorflow.org/js/tutorials/deployment/size_optimized_bundles)
     2. [Icons](https://www.npmjs.com/package/@material-design-icons/svg)
-5. Add github workflow to build test deploy site
+5. Add tutorial
+6. Start with an interesting preset
